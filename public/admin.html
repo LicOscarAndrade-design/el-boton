@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>¡El Botón! — Cabina</title>
+<style>
+:root{--bg:#0d0b1e;--panel:#1a1640;--line:#2f2a6e;--pink:#ff2e88;--cyan:#22d3ee;--gold:#ffd23f;--ok:#22c55e;--bad:#ef4444;--txt:#f5f3ff;--muted:#a7a1d6}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:14px}
+.hidden{display:none!important}
+.top{display:flex;align-items:center;gap:10px;padding:12px 16px;background:#141033;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.top h1{margin:0;font-size:18px;color:var(--gold)}
+.top a{color:var(--cyan);font-size:13px}
+.spacer{flex:1}
+.wrap{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(300px,1fr);gap:14px;padding:14px;max-width:1300px;margin:0 auto}
+@media (max-width:800px){.wrap{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
+.card h2{margin:0 0 10px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.btn{background:#2a2670;color:var(--txt);border:1px solid #403b96;border-radius:10px;padding:10px 14px;font-size:14px;font-weight:700;cursor:pointer}
+.btn:hover{filter:brightness(1.15)}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.btn.big{font-size:20px;padding:18px 20px;width:100%}
+.btn.pink{background:linear-gradient(90deg,#d6005f,#ff2e88);border-color:var(--pink)}
+.btn.gold{background:#a16207;border-color:var(--gold)}
+.btn.bad{background:#7f1d1d;border-color:var(--bad)}
+.btn.sm{padding:4px 8px;font-size:12px;border-radius:6px}
+.state{font-size:28px;font-weight:900;padding:16px;border-radius:10px;text-align:center;margin-bottom:12px}
+.state.idle{background:#24213f;color:var(--muted)}
+.state.armed{background:#5c4000;color:var(--gold)}
+.state.open{background:#7a0033;color:#fff;animation:bl .4s steps(2) infinite}
+.state.won{background:#3d2e00;color:var(--gold)}
+@keyframes bl{50%{background:#a3004a}}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.stats{display:flex;gap:10px;margin-bottom:12px}
+.stat{flex:1;background:#ffffff0a;border-radius:10px;padding:10px;text-align:center}
+.stat b{display:block;font-size:26px;color:var(--cyan)}
+.winner{background:linear-gradient(135deg,#3d2e00,#1a1400);border:1px solid var(--gold);border-radius:12px;padding:14px;margin-bottom:12px;text-align:center}
+.winner .n{font-size:30px;font-weight:900;color:var(--gold)}
+.winner .c{display:inline-block;background:#fff;color:#111;font-size:28px;font-weight:900;letter-spacing:.15em;border-radius:8px;padding:2px 12px;margin-top:6px}
+table{width:100%;border-collapse:collapse}
+td,th{padding:6px 8px;border-bottom:1px solid #ffffff10;text-align:left}
+th{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#555;margin-right:6px}
+.dot.on{background:var(--ok)}
+.list{max-height:420px;overflow:auto}
+input[type=text],input[type=password],input[type=number]{background:#0e0b26;color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:14px}
+.opt{display:flex;align-items:center;gap:8px;margin:8px 0}
+.login{max-width:360px;margin:12vh auto;text-align:center}
+.login input{width:100%;font-size:18px;padding:12px;margin:12px 0}
+.hint{color:var(--muted);font-size:12px;margin-top:6px}
+.banned td{opacity:.45;text-decoration:line-through}
+</style>
+</head>
+<body>
+<div id="login" class="login card">
+  <h2 style="font-size:20px;color:var(--gold);letter-spacing:0;text-transform:none">🔒 Cabina — ¡El Botón!</h2>
+  <form id="lf"><input type="password" id="pw" placeholder="Contraseña" autofocus><button class="btn pink big">Entrar</button></form>
+  <div id="lerr" style="color:#fca5a5;margin-top:10px"></div>
+</div>
+
+<div id="main" class="hidden">
+  <div class="top">
+    <h1>🎮 ¡El Botón! · Cabina</h1>
+    <a href="/pantalla" target="_blank">📺 Abrir pantalla grande</a>
+    <a href="/qr.svg" target="_blank">🖨 QR para imprimir</a>
+    <span class="spacer"></span>
+    <span id="conn" style="font-size:12px;color:var(--muted)"></span>
+  </div>
+  <div class="wrap">
+    <div>
+      <div class="card">
+        <h2>Ronda <span id="rno"></span></h2>
+        <div id="state" class="state idle">APAGADO</div>
+        <div id="winner" class="winner hidden"><div style="color:var(--muted)">🏆 Ganador</div><div class="n" id="wn"></div><div id="wm" style="color:var(--muted)"></div><div class="c" id="wc"></div></div>
+        <div class="grid">
+          <button class="btn pink big" id="arm">🎲 Activar con espera sorpresa</button>
+          <button class="btn gold big" id="open">⚡ Activar YA</button>
+        </div>
+        <button class="btn bad" id="stop" style="width:100%">⏹ Apagar botón / nueva ronda</button>
+        <div class="hint">“Espera sorpresa”: la gente ve “PREPÁRATE” y el botón se activa tras un tiempo aleatorio, para que nadie pueda adivinar el momento exacto.</div>
+      </div>
+      <div class="card" style="margin-top:14px">
+        <h2>Orden de llegada (esta ronda)</h2>
+        <div class="stats"><div class="stat"><b id="sOnline">0</b>conectados</div><div class="stat"><b id="sPress">0</b>presionaron</div><div class="stat"><b id="sFalse">0</b>se adelantaron</div></div>
+        <table><thead><tr><th>#</th><th>Nombre</th><th>Tiempo</th></tr></thead><tbody id="presses"></tbody></table>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <h2>Opciones</h2>
+        <label class="opt"><input type="checkbox" id="optEx"> Quien ya ganó no puede volver a ganar</label>
+        <label class="opt"><input type="checkbox" id="optEarly"> Bloquear la ronda a quien presione antes de tiempo</label>
+        <div class="opt">Espera sorpresa entre <input type="number" id="optMin" min="0" max="60" step="0.5" style="width:70px"> y <input type="number" id="optMax" min="0" max="60" step="0.5" style="width:70px"> segundos</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+          <button class="btn sm" id="resetWins">Borrar historial de ganadores</button>
+          <button class="btn sm" id="clearOff">Quitar jugadores desconectados</button>
+        </div>
+      </div>
+      <div class="card" style="margin-top:14px">
+        <h2>Ganadores anteriores</h2>
+        <table><thead><tr><th>Ronda</th><th>Nombre</th><th>Código</th><th>Tiempo</th></tr></thead><tbody id="hist"></tbody></table>
+      </div>
+      <div class="card" style="margin-top:14px">
+        <h2>Jugadores (<span id="pTotal">0</span>)</h2>
+        <input type="text" id="search" placeholder="Buscar nombre…" style="width:100%;margin-bottom:8px">
+        <div class="list"><table><tbody id="plist"></tbody></table></div>
+        <div class="hint">Usa “Quitar” si alguien pone un nombre ofensivo.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const socket = io({ transports: ['websocket', 'polling'] });
+let pw = sessionStorage.getItem('boton_pw') || '', A = null;
+
+function auth() {
+  socket.emit('admin:auth', pw, res => {
+    if (res && res.ok) { sessionStorage.setItem('boton_pw', pw); $('#login').classList.add('hidden'); $('#main').classList.remove('hidden'); }
+    else { $('#lerr').textContent = pw ? 'Contraseña incorrecta' : ''; sessionStorage.removeItem('boton_pw'); }
+  });
+}
+$('#lf').onsubmit = e => { e.preventDefault(); pw = $('#pw').value; auth(); };
+socket.on('connect', () => { $('#conn').textContent = '● conectado'; if (pw) auth(); });
+socket.on('disconnect', () => $('#conn').textContent = '● sin conexión, reintentando…');
+
+const LABEL = { idle: 'APAGADO', armed: 'PREPARANDO… (espera sorpresa)', open: '¡ACTIVO! ESPERANDO AL PRIMERO', won: '¡HAY GANADOR!' };
+socket.on('admin:state', s => { A = s; draw(); });
+function draw() {
+  const r = A.round;
+  $('#rno').textContent = r.no ? '#' + r.no : '';
+  const st = $('#state'); st.className = 'state ' + r.state; st.textContent = LABEL[r.state];
+  $('#winner').classList.toggle('hidden', !r.winner);
+  if (r.winner) { $('#wn').textContent = r.winner.name; $('#wm').textContent = `${(r.winner.ms / 1000).toFixed(3)} s después de activarse`; $('#wc').textContent = r.winner.code; }
+  $('#open').textContent = r.state === 'armed' ? '⚡ Activar YA (saltar espera)' : '⚡ Activar YA';
+  $('#sOnline').textContent = A.online; $('#sPress').textContent = A.totalPresses; $('#sFalse').textContent = A.falseStarts;
+  $('#presses').innerHTML = A.presses.map(p => `<tr><td>${p.pos}</td><td>${esc(p.name)}</td><td>${(p.ms / 1000).toFixed(3)} s</td></tr>`).join('') || '<tr><td colspan="3" style="color:var(--muted)">Nadie todavía</td></tr>';
+  $('#hist').innerHTML = A.history.map(h => `<tr><td>${h.round}</td><td>${esc(h.name)}</td><td><b>${h.code}</b></td><td>${(h.ms / 1000).toFixed(2)} s</td></tr>`).join('') || '<tr><td colspan="4" style="color:var(--muted)">Sin ganadores aún</td></tr>';
+  const s = A.settings;
+  if (document.activeElement.id !== 'optMin') $('#optMin').value = s.minDelay;
+  if (document.activeElement.id !== 'optMax') $('#optMax').value = s.maxDelay;
+  $('#optEx').checked = s.excludeWinners; $('#optEarly').checked = s.penalizeEarly;
+  drawPlayers();
+}
+function drawPlayers() {
+  if (!A) return;
+  const q = $('#search').value.trim().toLowerCase();
+  const list = A.players.filter(p => !q || p.name.toLowerCase().includes(q)).slice(0, 300);
+  $('#pTotal').textContent = `${A.online} en línea · ${A.totalPlayers} registrados`;
+  $('#plist').innerHTML = list.map(p => `<tr class="${p.banned ? 'banned' : ''}"><td><span class="dot ${p.online ? 'on' : ''}"></span>${esc(p.name)}${p.wins ? ' 🏆' : ''}</td>
+    <td style="text-align:right">${p.banned ? `<button class="btn sm" data-unban="${esc(p.token)}">Restaurar</button>` : `<button class="btn sm bad" data-kick="${esc(p.token)}">Quitar</button>`}</td></tr>`).join('');
+}
+$('#search').oninput = drawPlayers;
+$('#plist').onclick = e => {
+  const k = e.target.dataset.kick, u = e.target.dataset.unban;
+  if (k && confirm('¿Quitar a este jugador del juego?')) socket.emit('admin:kick', k);
+  if (u) socket.emit('admin:unban', u);
+};
+$('#arm').onclick = () => socket.emit('admin:arm');
+$('#open').onclick = () => socket.emit('admin:open');
+$('#stop').onclick = () => socket.emit('admin:stop');
+const sendSettings = () => socket.emit('admin:settings', { excludeWinners: $('#optEx').checked, penalizeEarly: $('#optEarly').checked, minDelay: Number($('#optMin').value), maxDelay: Number($('#optMax').value) });
+['#optEx', '#optEarly', '#optMin', '#optMax'].forEach(id => $(id).onchange = sendSettings);
+$('#resetWins').onclick = () => confirm('¿Borrar el historial? Los ganadores anteriores podrán volver a ganar.') && socket.emit('admin:resetwins');
+$('#clearOff').onclick = () => socket.emit('admin:clearplayers');
+</script>
+</body>
+</html>

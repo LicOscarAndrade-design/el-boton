@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0d0b1e">
+<title>¡El Botón!</title>
+<style>
+:root{--bg:#0d0b1e;--card:#1a1640;--line:#2f2a6e;--pink:#ff2e88;--cyan:#22d3ee;--gold:#ffd23f;--ok:#22c55e;--bad:#ef4444;--txt:#f5f3ff;--muted:#a7a1d6}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+body{background:radial-gradient(ellipse at top,#2a1f6e 0%,var(--bg) 60%) fixed;overscroll-behavior:none}
+.screen{min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 20px calc(24px + env(safe-area-inset-bottom));text-align:center}
+.hidden{display:none!important}
+.logo{font-size:44px;font-weight:900;letter-spacing:-.02em;line-height:1;margin:0 0 6px;background:linear-gradient(90deg,var(--gold),var(--pink),var(--cyan));-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{color:var(--muted);margin:0 0 28px;font-size:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:22px;width:100%;max-width:420px}
+input{width:100%;font-size:20px;padding:16px;border-radius:14px;border:2px solid var(--line);background:#0e0b26;color:var(--txt);text-align:center;outline:none}
+input:focus{border-color:var(--pink)}
+.cta{width:100%;margin-top:14px;font-size:20px;font-weight:800;padding:16px;border:0;border-radius:14px;background:linear-gradient(90deg,var(--pink),#ff6a3d);color:#fff;cursor:pointer}
+.cta:disabled{opacity:.5}
+.err{color:#fca5a5;min-height:22px;margin-top:10px;font-size:14px}
+.rules{text-align:left;margin:0;padding:0;list-style:none}
+.rules li{display:flex;gap:12px;align-items:flex-start;margin-bottom:16px;font-size:17px;line-height:1.35}
+.rules .n{flex:none;width:30px;height:30px;border-radius:50%;background:var(--pink);display:flex;align-items:center;justify-content:center;font-weight:900}
+.hello{font-size:15px;color:var(--muted);margin-bottom:6px}
+.hello b{color:var(--txt)}
+#status{font-size:18px;min-height:52px;margin:8px 0 22px;max-width:380px;line-height:1.35}
+#status b{color:var(--gold)}
+.bigbtn{width:min(72vw,300px);aspect-ratio:1;border-radius:50%;border:0;font-size:32px;font-weight:900;color:#fff;cursor:pointer;touch-action:manipulation;user-select:none;-webkit-user-select:none;position:relative;transition:transform .06s}
+.bigbtn:active{transform:scale(.94)}
+.bigbtn.idle{background:radial-gradient(circle at 35% 30%,#4b4775,#24213f);box-shadow:0 14px 0 #14122a,0 20px 40px #0008;color:#8f8ab8}
+.bigbtn.armed{background:radial-gradient(circle at 35% 30%,#ffd76a,#d49100);box-shadow:0 14px 0 #7a5300,0 0 60px #ffd23f88;color:#3a2600;animation:breathe 1s ease-in-out infinite}
+.bigbtn.open{background:radial-gradient(circle at 35% 30%,#ff6aa8,#e0005e);box-shadow:0 14px 0 #7a0033,0 0 80px #ff2e88cc;animation:throb .35s ease-in-out infinite alternate}
+.bigbtn.done{background:radial-gradient(circle at 35% 30%,#3d3a5c,#1e1b36);box-shadow:0 6px 0 #14122a;color:#8f8ab8;font-size:22px}
+@keyframes breathe{50%{transform:scale(1.04)}}
+@keyframes throb{to{transform:scale(1.06)}}
+.flashbg{position:fixed;inset:0;pointer-events:none;background:var(--pink);opacity:0}
+.flashbg.go{animation:fl .6s 3}
+@keyframes fl{50%{opacity:.35}}
+.win{background:linear-gradient(160deg,#3a2a00,#120d00);}
+.win .t{font-size:54px;font-weight:900;color:var(--gold);line-height:1;margin:0;text-shadow:0 4px 0 #000;animation:pop .6s cubic-bezier(.2,1.6,.4,1)}
+@keyframes pop{from{transform:scale(.2);opacity:0}}
+.code{font-size:64px;font-weight:900;letter-spacing:.15em;background:#fff;color:#111;border-radius:16px;padding:8px 18px;margin:18px 0 8px}
+.small{font-size:13px;color:var(--muted)}
+.conn{position:fixed;top:calc(10px + env(safe-area-inset-top));right:10px;font-size:12px;padding:4px 10px;border-radius:99px;background:#0f3d24;color:#86efac}
+.conn.off{background:#3f1d1d;color:#fca5a5}
+.change{background:none;border:0;color:var(--muted);text-decoration:underline;font-size:13px;margin-top:22px;cursor:pointer}
+.confetti{position:fixed;top:-5vh;width:10px;height:16px;z-index:5;animation:fall linear forwards;pointer-events:none}
+@keyframes fall{to{transform:translateY(115vh) rotate(720deg)}}
+</style>
+</head>
+<body>
+<span id="conn" class="conn off hidden">Conectando…</span>
+
+<!-- 1. Nombre -->
+<section id="s-join" class="screen">
+  <h1 class="logo">¡EL BOTÓN!</h1>
+  <p class="sub">Juego de la convención</p>
+  <form class="card" id="joinForm" autocomplete="off">
+    <label for="name" style="display:block;margin-bottom:10px;font-weight:700">¿Cómo te llamas?</label>
+    <input id="name" maxlength="24" placeholder="Tu nombre o apodo" enterkeyhint="done">
+    <button class="cta" type="submit">Aceptar</button>
+    <div class="err" id="joinErr"></div>
+  </form>
+</section>
+
+<!-- 2. Instrucciones -->
+<section id="s-rules" class="screen hidden">
+  <h1 class="logo" style="font-size:34px">¿Cómo se juega?</h1>
+  <p class="sub">Es muy sencillo</p>
+  <div class="card">
+    <ul class="rules">
+      <li><span class="n">1</span><span><b>Deja esta página abierta</b> durante la convención (puedes bloquear el teléfono; al volver se reconecta solita).</span></li>
+      <li><span class="n">2</span><span>En algún momento sorpresa <b>se activará un botón</b>. Tu teléfono vibrará y el botón se pondrá rosa.</span></li>
+      <li><span class="n">3</span><span><b>El primero en presionarlo gana</b> la oportunidad de pasar al escenario o llevarse un premio.</span></li>
+      <li><span class="n">4</span><span>Cuando el botón esté amarillo (“prepárate”), <b>¡no lo toques!</b> Si lo presionas antes de tiempo quedas fuera de esa ronda.</span></li>
+    </ul>
+    <button class="cta" id="rulesOk">¡Entendido!</button>
+  </div>
+</section>
+
+<!-- 3. Juego -->
+<section id="s-game" class="screen hidden">
+  <div class="hello">Jugando como <b id="meName"></b></div>
+  <div id="status"></div>
+  <button id="btn" class="bigbtn idle" disabled>ESPERA</button>
+  <button class="change" id="seeRules">Ver instrucciones</button>
+</section>
+
+<!-- 4. Ganador -->
+<section id="s-win" class="screen win hidden">
+  <p class="t">¡GANASTE!</p>
+  <p style="font-size:20px;margin:16px 0 0">Fuiste el más rápido <span id="winMs"></span></p>
+  <div class="code" id="winCode">0000</div>
+  <p style="font-size:18px;max-width:340px"><b>Acércate al escenario</b> y muestra este código al staff para reclamar tu lugar.</p>
+  <p class="small">El código también aparece en la pantalla grande.</p>
+</section>
+
+<!-- 5. Removido -->
+<section id="s-banned" class="screen hidden">
+  <h1 class="logo" style="font-size:30px">Ya no participas</h1>
+  <p class="sub">El staff te retiró del juego. Si crees que es un error, acércate al módulo de información.</p>
+</section>
+
+<div class="flashbg" id="flashbg"></div>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+const LS = { token: 'boton_token', name: 'boton_name', rules: 'boton_rules_ok' };
+const get = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+const set = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+
+let token = get(LS.token);
+if (!token) { token = (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2)); set(LS.token, token); }
+let name = get(LS.name) || '';
+let joined = false, rulesOk = get(LS.rules) === '1';
+let R = { state: 'idle', no: 0 }, ME = null, sentRound = -1, lastState = null;
+
+const socket = io({ transports: ['websocket', 'polling'] });
+
+function show(id) { document.querySelectorAll('.screen').forEach(s => s.classList.toggle('hidden', s.id !== id)); }
+
+/* ---------- conexión ---------- */
+socket.on('connect', () => {
+  setConn(true);
+  if (name) join((ok, err) => { if (!ok) { joined = false; show('s-join'); $('#joinErr').textContent = err || ''; } });
+});
+socket.on('disconnect', () => setConn(false));
+function setConn(ok) {
+  const c = $('#conn'); c.classList.toggle('hidden', !name);
+  c.classList.toggle('off', !ok); c.textContent = ok ? '● Conectado' : '● Reconectando…';
+}
+function join(cb) {
+  socket.emit('player:join', { token, name }, res => {
+    if (res && res.ok) { joined = true; cb && cb(true); }
+    else { cb && cb(false, res && res.error); }
+  });
+}
+
+/* ---------- pantalla 1: nombre ---------- */
+$('#name').value = name;
+$('#joinForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const n = $('#name').value.replace(/\s+/g, ' ').trim();
+  if (!n) { $('#joinErr').textContent = 'Escribe tu nombre para continuar.'; return; }
+  name = n.slice(0, 24); set(LS.name, name);
+  $('#joinErr').textContent = '';
+  unlockAudio();
+  if (!socket.connected) { $('#joinErr').textContent = 'Conectando… intenta de nuevo en un segundo.'; return; }
+  join((ok, err) => {
+    if (!ok) { $('#joinErr').textContent = err || 'No se pudo entrar.'; return; }
+    show('s-rules'); setConn(true);
+  });
+});
+
+/* ---------- pantalla 2: instrucciones ---------- */
+$('#rulesOk').onclick = () => { rulesOk = true; set(LS.rules, '1'); unlockAudio(); keepAwake(); render(); };
+$('#seeRules').onclick = () => show('s-rules');
+
+/* ---------- juego ---------- */
+socket.on('round', r => { R = r; render(); });
+socket.on('me', m => { ME = m; render(); });
+
+const btn = $('#btn');
+btn.addEventListener('pointerdown', e => {
+  e.preventDefault();
+  if (btn.disabled) return;
+  if (R.state === 'armed' || R.state === 'open' || R.state === 'won') {
+    socket.emit('player:press');
+    sentRound = R.no;
+    if (R.state !== 'armed') { btn.className = 'bigbtn done'; btn.textContent = '¡ENVIADO!'; btn.disabled = true; }
+    if (navigator.vibrate) navigator.vibrate(30);
+  }
+});
+
+function render() {
+  if (!name) return show('s-join');
+  if (!joined) return show(name ? 's-join' : 's-join');
+  if (ME && ME.banned) return show('s-banned');
+  if (ME && ME.isWinner && ME.round === R.no) {
+    $('#winCode').textContent = ME.code;
+    $('#winMs').textContent = ME.pressed ? `(${(ME.pressed.ms / 1000).toFixed(2)} s)` : '';
+    if (lastState !== 'win') { lastState = 'win'; confetti(); beep([523, 659, 784, 1047]); if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 400]); }
+    return show('s-win');
+  }
+  if (!rulesOk) return show('s-rules');
+  show('s-game');
+  $('#meName').textContent = name;
+
+  const me = ME && ME.round === R.no ? ME : null;
+  const st = $('#status');
+  let cls = 'idle', label = 'ESPERA', disabled = true, text = '';
+
+  if (ME && ME.ineligible) {
+    cls = 'done'; label = '🏆'; text = 'Ya ganaste una vez — ¡deja que otros también tengan su oportunidad! 😉';
+  } else if (me && me.locked) {
+    cls = 'done'; label = '⛔'; text = '<b>¡Muy pronto!</b> Presionaste antes de que se activara. Quedaste fuera de esta ronda, pero puedes jugar en la siguiente.';
+  } else if (R.state === 'idle') {
+    text = 'El botón está apagado. <b>Mantén esta página abierta</b>: se activará en un momento sorpresa.';
+  } else if (R.state === 'armed') {
+    cls = 'armed'; label = 'PREPÁRATE'; disabled = !R.penalizeEarly;
+    text = '<b>¡Atento!</b> El botón está por activarse… ' + (R.penalizeEarly ? 'No lo toques todavía.' : '');
+  } else if (R.state === 'open') {
+    if (me && me.pressed) { cls = 'done'; label = '¡ENVIADO!'; text = 'Esperando resultado…'; }
+    else if (sentRound === R.no) { cls = 'done'; label = '¡ENVIADO!'; text = 'Esperando resultado…'; }
+    else { cls = 'open'; label = '¡PRESIONA!'; disabled = false; text = '<b>¡AHORA! ¡RÁPIDO!</b>'; }
+  } else if (R.state === 'won') {
+    const w = R.winner ? R.winner.name : 'alguien';
+    if (me && me.pressed) { cls = 'done'; label = `#${me.pressed.pos}`; text = `Ganó <b>${esc(w)}</b>. Tú llegaste en el lugar <b>#${me.pressed.pos}</b> (${(me.pressed.ms / 1000).toFixed(2)} s). ¡Suerte en la próxima!`; }
+    else if (sentRound === R.no) { cls = 'done'; label = '…'; text = `Ganó <b>${esc(w)}</b>.`; }
+    else { cls = 'done'; label = '😮'; text = `¡Ya hay ganador: <b>${esc(w)}</b>! Mantente atento a la próxima ronda.`; }
+  }
+  btn.className = 'bigbtn ' + cls; btn.textContent = label; btn.disabled = disabled;
+  st.innerHTML = text;
+
+  // aviso cuando se activa
+  const key = R.no + R.state;
+  if (lastState !== key) {
+    if (R.state === 'armed' && !(ME && ME.ineligible)) { if (navigator.vibrate) navigator.vibrate([150, 80, 150]); beep([440]); }
+    if (R.state === 'open' && cls === 'open') { if (navigator.vibrate) navigator.vibrate([400]); beep([880, 1175]); const f = $('#flashbg'); f.classList.remove('go'); void f.offsetWidth; f.classList.add('go'); }
+    lastState = key;
+  }
+}
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+/* ---------- extras: sonido, pantalla encendida, confeti ---------- */
+let actx;
+function unlockAudio() { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); actx.resume(); } catch (e) {} }
+function beep(freqs) {
+  if (!actx) return;
+  freqs.forEach((f, i) => {
+    const o = actx.createOscillator(), g = actx.createGain(), t = actx.currentTime + i * .12;
+    o.type = 'square'; o.frequency.value = f; g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.15, t + .01); g.gain.exponentialRampToValueAtTime(.0001, t + .18);
+    o.connect(g).connect(actx.destination); o.start(t); o.stop(t + .2);
+  });
+}
+let wakeLock = null;
+async function keepAwake() { try { if ('wakeLock' in navigator && document.visibilityState === 'visible') wakeLock = await navigator.wakeLock.request('screen'); } catch (e) {} }
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') { keepAwake(); if (!socket.connected) socket.connect(); }
+});
+function confetti() {
+  const colors = ['#ffd23f', '#ff2e88', '#22d3ee', '#22c55e', '#fff'];
+  for (let i = 0; i < 90; i++) {
+    const d = document.createElement('div'); d.className = 'confetti';
+    d.style.left = Math.random() * 100 + 'vw'; d.style.background = colors[i % colors.length];
+    d.style.animationDuration = (2 + Math.random() * 2) + 's'; d.style.animationDelay = Math.random() + 's';
+    document.body.appendChild(d); setTimeout(() => d.remove(), 5000);
+  }
+}
+
+// inicio: si ya había escrito su nombre, entra directo
+if (name) { show(rulesOk ? 's-game' : 's-rules'); $('#meName').textContent = name; joined = true; }
+else show('s-join');
+</script>
+</body>
+</html>

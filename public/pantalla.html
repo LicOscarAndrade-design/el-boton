@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>¡El Botón! — Pantalla</title>
+<style>
+:root{--bg:#0d0b1e;--pink:#ff2e88;--cyan:#22d3ee;--gold:#ffd23f;--txt:#f5f3ff;--muted:#a7a1d6}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--txt);font-family:"Arial Black","Segoe UI",system-ui,sans-serif}
+body{background:radial-gradient(ellipse at top,#2a1f6e 0%,var(--bg) 65%)}
+.v{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:3vw}
+.hidden{display:none!important}
+.logo{font-size:7vw;line-height:1;margin:0;background:linear-gradient(90deg,var(--gold),var(--pink),var(--cyan),var(--gold));background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 4s linear infinite}
+@keyframes shine{to{background-position:300% 0}}
+.idle{flex-direction:row;gap:5vw}
+.qrbox{background:#fff;border-radius:2vw;padding:1.5vw;box-shadow:0 0 6vw #ff2e8866}
+.qrbox img{display:block;width:min(38vw,70vh);height:auto}
+.info{text-align:left;max-width:45vw}
+.info h2{font-size:3.4vw;margin:2vw 0 1vw;line-height:1.1}
+.info p{font-family:system-ui,sans-serif;font-size:2vw;color:var(--muted);margin:.5vw 0}
+.url{font-family:ui-monospace,Consolas,monospace;font-size:1.8vw;color:var(--cyan);word-break:break-all;margin-top:1.5vw}
+.count{display:inline-block;margin-top:2vw;font-size:2.4vw;background:#ffffff12;border-radius:99px;padding:.6vw 2vw}
+.count b{color:var(--gold)}
+.armed .t{font-size:11vw;color:var(--gold);animation:pulse 1s ease-in-out infinite;text-shadow:.6vw .6vw 0 #000}
+@keyframes pulse{50%{transform:scale(1.06)}}
+.open{background:var(--pink);animation:strobe .25s steps(2) infinite}
+.open .t{font-size:16vw;line-height:1;color:#fff;text-shadow:.8vw .8vw 0 #7a0033}
+@keyframes strobe{50%{background:#c4005c}}
+.won .lbl{font-size:4vw;color:var(--muted)}
+.won .name{font-size:10vw;line-height:1.05;color:var(--gold);text-shadow:.6vw .6vw 0 #000;animation:pop .8s cubic-bezier(.2,1.6,.4,1);max-width:95vw;word-break:break-word}
+.won .meta{font-family:system-ui,sans-serif;font-size:2.4vw;color:var(--muted);margin-top:1.5vw}
+.won .code{display:inline-block;margin-top:2vw;background:#fff;color:#111;border-radius:1.2vw;padding:.6vw 2.4vw;font-size:6vw;letter-spacing:.15em}
+@keyframes pop{from{transform:scale(.2);opacity:0}}
+.corner{position:fixed;right:1.5vw;bottom:1.5vw;background:#fff;border-radius:1vw;padding:.6vw;display:flex;flex-direction:column;align-items:center;gap:.3vw}
+.corner img{width:11vw;height:auto;display:block}
+.corner span{font-family:system-ui,sans-serif;color:#111;font-size:1vw;font-weight:700}
+.confetti{position:fixed;top:-5vh;width:1vw;height:1.6vw;animation:fall linear forwards;z-index:5}
+@keyframes fall{to{transform:translateY(115vh) rotate(720deg)}}
+#start{position:fixed;inset:0;z-index:20;background:#000c;display:flex;align-items:center;justify-content:center;flex-direction:column;cursor:pointer;font-family:system-ui,sans-serif;font-size:2vw;gap:1vw}
+#start b{font-size:3vw}
+</style>
+</head>
+<body>
+<div id="start"><b>Haz clic para activar sonido y pantalla completa</b><span style="color:#a7a1d6">(o presiona cualquier tecla)</span></div>
+
+<div class="v idle" id="v-idle">
+  <div class="qrbox"><img src="/qr.svg" alt="Código QR"></div>
+  <div class="info">
+    <h1 class="logo">¡EL BOTÓN!</h1>
+    <h2>Escanea el código y escribe tu nombre</h2>
+    <p>En un momento sorpresa se activará un botón en tu teléfono.</p>
+    <p><b style="color:#fff">¡El primero en presionarlo gana!</b></p>
+    <div class="url" id="url"></div>
+    <div class="count"><b id="count">0</b> jugadores conectados</div>
+  </div>
+</div>
+<div class="v armed hidden" id="v-armed"><div class="t">¡PREPÁRENSE!</div><div class="count" style="font-family:system-ui"><b id="count2">0</b> jugadores listos</div></div>
+<div class="v open hidden" id="v-open"><div class="t">¡YA!<br>¡PRESIONA!</div></div>
+<div class="v won hidden" id="v-won">
+  <div class="lbl">🏆 ¡TENEMOS GANADOR! 🏆</div>
+  <div class="name" id="wname"></div>
+  <div class="meta" id="wmeta"></div>
+  <div><span class="code" id="wcode"></span></div>
+</div>
+<div class="corner hidden" id="corner"><img src="/qr.svg" alt=""><span>¡Únete!</span></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+fetch('/api/info').then(r => r.json()).then(i => $('#url').textContent = i.joinUrl.replace(/\/$/, ''));
+let actx = null, last = '';
+function start() {
+  $('#start').classList.add('hidden');
+  try { actx = new (window.AudioContext || window.webkitAudioContext)(); actx.resume(); } catch (e) {}
+  document.documentElement.requestFullscreen?.().catch(() => {});
+}
+$('#start').onclick = start; document.addEventListener('keydown', () => !$('#start').classList.contains('hidden') && start(), { once: true });
+
+function tone(f, t, d, type = 'square', v = .15) {
+  if (!actx) return; const a = actx, o = a.createOscillator(), g = a.createGain(), s = a.currentTime + t;
+  o.type = type; o.frequency.value = f; g.gain.setValueAtTime(.0001, s); g.gain.exponentialRampToValueAtTime(v, s + .01); g.gain.exponentialRampToValueAtTime(.0001, s + d);
+  o.connect(g).connect(a.destination); o.start(s); o.stop(s + d + .05);
+}
+const SND = {
+  armed() { tone(440, 0, .15); tone(440, .5, .15); tone(440, 1, .15); },
+  open() { tone(880, 0, .12); tone(1175, .1, .12); tone(1760, .2, .4); },
+  won() { [[392, 0, .15], [392, .16, .15], [392, .32, .15], [523, .48, .6], [466, 1.1, .15], [523, 1.26, .15], [659, 1.42, 1]].forEach(([f, t, d]) => { tone(f, t, d, 'sawtooth', .12); tone(f * 2, t, d, 'square', .05); }); },
+};
+
+const socket = io({ transports: ['websocket', 'polling'] });
+socket.on('round', r => {
+  $('#count').textContent = r.count; $('#count2').textContent = r.count;
+  const view = r.state === 'idle' ? 'idle' : r.state;
+  document.querySelectorAll('.v').forEach(v => v.classList.toggle('hidden', v.id !== 'v-' + view));
+  $('#corner').classList.toggle('hidden', view === 'idle');
+  if (r.state === 'won' && r.winner) {
+    $('#wname').textContent = r.winner.name;
+    $('#wmeta').textContent = `Presionó en ${(r.winner.ms / 1000).toFixed(2)} segundos · Código de verificación:`;
+    $('#wcode').textContent = r.winner.code;
+  }
+  const k = r.no + r.state;
+  if (k !== last) { last = k; SND[r.state] && SND[r.state](); if (r.state === 'won') confetti(); }
+});
+function confetti() {
+  const c = ['#ffd23f', '#ff2e88', '#22d3ee', '#22c55e', '#fff'];
+  for (let i = 0; i < 160; i++) {
+    const d = document.createElement('div'); d.className = 'confetti';
+    d.style.left = Math.random() * 100 + 'vw'; d.style.background = c[i % c.length];
+    d.style.animationDuration = (2.5 + Math.random() * 2.5) + 's'; d.style.animationDelay = Math.random() * 1.5 + 's';
+    document.body.appendChild(d); setTimeout(() => d.remove(), 7000);
+  }
+}
+</script>
+</body>
+</html>

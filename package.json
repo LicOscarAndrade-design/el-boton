@@ -1,0 +1,17 @@
+{
+  "name": "el-boton-convencion",
+  "version": "1.0.0",
+  "description": "Juego para convenciones: escanea el QR, escribe tu nombre y sé el primero en presionar el botón.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "qrcode": "^1.5.4",
+    "socket.io": "^4.8.1"
+  }
+}
