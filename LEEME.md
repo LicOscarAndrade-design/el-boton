@@ -45,8 +45,10 @@ La consola muestra la dirección para los teléfonos. El QR de `/pantalla` apunt
 ## Cómo se juega una ronda
 
 1. La pantalla grande muestra el QR y la gente se va uniendo.
-2. En la cabina presiona **🎲 Activar con espera sorpresa**: los teléfonos se ponen amarillos (“PREPÁRATE”) y, tras un tiempo aleatorio (2 a 6 segundos por defecto), el botón se pone rosa, vibra y suena.
-   - **⚡ Activar YA** lo enciende al instante, sin espera.
+2. En la cabina presiona **🎲 Activar con espera sorpresa**: tras un tiempo aleatorio, el botón se pone rosa en todos los teléfonos, vibra y suena.
+   - Mientras dura la espera, los teléfonos y la pantalla grande se ven **apagados**, así que nadie sabe que ya viene. Solo en los últimos segundos (5 por defecto) aparece “PREPÁRATE”. La cabina sí muestra la cuenta regresiva.
+   - En **Opciones** eliges entre cuántos segundos se sortea la espera, hasta **600 (10 minutos)**. Ejemplo: entre 60 y 600 = en algún momento entre 1 y 10 minutos.
+   - **⚡ Activar YA** lo enciende al instante y también sirve para adelantar una espera que ya empezó.
 3. El primero que presiona gana: su teléfono muestra **¡GANASTE!** y su código, y la pantalla grande muestra su nombre con el mismo código.
 4. **⏹ Apagar botón / nueva ronda** deja todo listo para la siguiente ronda.
 

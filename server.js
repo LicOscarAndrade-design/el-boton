@@ -48,13 +48,15 @@ app.get('/salud', (req, res) => res.send('ok'));
 
 /* ---------- estado del juego ---------- */
 const players = new Map(); // token -> { token, name, sockets:Set, wins, banned, joinedAt }
-const settings = { excludeWinners: true, penalizeEarly: true, minDelay: 2, maxDelay: 6 };
+const MAX_DELAY = 600; // 10 minutos
+const settings = { excludeWinners: true, penalizeEarly: true, minDelay: 2, maxDelay: 6, warnSeconds: 5 };
 const history = []; // ganadores anteriores
 let round = newRound(0);
-let armTimer = null;
+let armTimer = null, warnTimer = null;
 
 function newRound(no) {
-  return { no, state: 'idle', openedAt: 0, presses: [], pressed: new Map(), locked: new Set(), winner: null };
+  // estados: idle → waiting (espera secreta: el público ve "apagado") → armed ("¡prepárate!") → open → won
+  return { no, state: 'idle', openedAt: 0, openAt: 0, presses: [], pressed: new Map(), locked: new Set(), winner: null };
 }
 const isConnected = p => p.sockets.size > 0 && !p.banned;
 const playerCount = () => { let n = 0; for (const p of players.values()) if (isConnected(p)) n++; return n; };
@@ -63,7 +65,7 @@ const code4 = () => String(crypto.randomInt(1000, 10000));
 
 function publicRound() {
   return {
-    no: round.no, state: round.state, count: playerCount(), penalizeEarly: settings.penalizeEarly,
+    no: round.no, state: round.state === 'waiting' ? 'idle' : round.state, count: playerCount(), penalizeEarly: settings.penalizeEarly,
     winner: round.winner ? { name: round.winner.name, code: round.winner.code, ms: round.winner.ms } : null,
   };
 }
@@ -93,22 +95,24 @@ function adminState() {
     .slice(0, 1000)
     .map(p => ({ token: p.token, name: p.name, online: p.sockets.size > 0, wins: p.wins, banned: p.banned }));
   return {
-    round: publicRound(), settings, history: history.slice(0, 50),
+    round: { ...publicRound(), state: round.state, msToOpen: round.openAt ? Math.max(0, round.openAt - Date.now()) : 0 },
+    maxDelay: MAX_DELAY, settings, history: history.slice(0, 50),
     presses: round.presses.slice(0, 30).map(e => ({ pos: e.pos, name: e.name, ms: e.ms })),
     totalPresses: round.presses.length, falseStarts: round.locked.size,
     players: list, totalPlayers: players.size, online: playerCount(),
   };
 }
 
+function clearTimers() { clearTimeout(armTimer); clearTimeout(warnTimer); armTimer = warnTimer = null; }
 function startRound(state) {
-  clearTimeout(armTimer); armTimer = null;
+  clearTimers();
   round = newRound(round.no + 1);
   round.state = state;
   if (state === 'open') round.openedAt = Date.now();
   sendMeAll(); broadcastRound();
 }
 function openNow() {
-  clearTimeout(armTimer); armTimer = null;
+  clearTimers();
   round.state = 'open'; round.openedAt = Date.now();
   broadcastRound();
 }
@@ -175,18 +179,25 @@ io.on('connection', socket => {
   const admin = (ev, fn) => socket.on(ev, (...a) => { if (socket.data.admin) fn(...a); });
 
   admin('admin:arm', () => {
-    startRound('armed');
     const min = Math.max(0, settings.minDelay), max = Math.max(min, settings.maxDelay);
-    armTimer = setTimeout(openNow, (min + Math.random() * (max - min)) * 1000);
+    const delay = (min + Math.random() * (max - min)) * 1000;
+    const warn = settings.warnSeconds * 1000;
+    startRound(delay > warn ? 'waiting' : 'armed');
+    round.openAt = Date.now() + delay;
+    if (round.state === 'waiting' && warn > 0) warnTimer = setTimeout(() => { round.state = 'armed'; broadcastRound(); }, delay - warn);
+    armTimer = setTimeout(openNow, delay);
+    scheduleAdmin();
   });
-  admin('admin:open', () => { if (round.state === 'armed') openNow(); else startRound('open'); });
+  admin('admin:open', () => { if (round.state === 'armed' || round.state === 'waiting') openNow(); else startRound('open'); });
   admin('admin:stop', () => startRound('idle'));
   admin('admin:settings', s => {
     if (!s || typeof s !== 'object') return;
     if ('excludeWinners' in s) settings.excludeWinners = !!s.excludeWinners;
     if ('penalizeEarly' in s) settings.penalizeEarly = !!s.penalizeEarly;
-    if ('minDelay' in s) settings.minDelay = Math.min(60, Math.max(0, Number(s.minDelay) || 0));
-    if ('maxDelay' in s) settings.maxDelay = Math.min(60, Math.max(0, Number(s.maxDelay) || 0));
+    if ('minDelay' in s) settings.minDelay = Math.min(MAX_DELAY, Math.max(0, Number(s.minDelay) || 0));
+    if ('maxDelay' in s) settings.maxDelay = Math.min(MAX_DELAY, Math.max(0, Number(s.maxDelay) || 0));
+    if (settings.maxDelay < settings.minDelay) settings.maxDelay = settings.minDelay;
+    if ('warnSeconds' in s) settings.warnSeconds = Math.min(60, Math.max(0, Number(s.warnSeconds) || 0));
     sendMeAll(); broadcastRound();
   });
   admin('admin:kick', token => {

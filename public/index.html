@@ -24,10 +24,11 @@ input:focus{border-color:var(--pink)}
 .rules li{display:flex;gap:12px;align-items:flex-start;margin-bottom:16px;font-size:17px;line-height:1.35}
 .rules .n{flex:none;width:30px;height:30px;border-radius:50%;background:var(--pink);display:flex;align-items:center;justify-content:center;font-weight:900}
 .hello{font-size:15px;color:var(--muted);margin-bottom:6px}
+.toplogo{width:min(46vw,190px,22vh);height:auto;margin:0 0 10px;filter:drop-shadow(0 6px 14px #0008)}
 .hello b{color:var(--txt)}
 #status{font-size:18px;min-height:52px;margin:8px 0 22px;max-width:380px;line-height:1.35}
 #status b{color:var(--gold)}
-.bigbtn{width:min(72vw,300px);aspect-ratio:1;border-radius:50%;border:0;font-size:32px;font-weight:900;color:#fff;cursor:pointer;touch-action:manipulation;user-select:none;-webkit-user-select:none;position:relative;transition:transform .06s}
+.bigbtn{width:min(72vw,300px,40vh);aspect-ratio:1;border-radius:50%;border:0;font-size:32px;font-weight:900;color:#fff;cursor:pointer;touch-action:manipulation;user-select:none;-webkit-user-select:none;position:relative;transition:transform .06s}
 .bigbtn:active{transform:scale(.94)}
 .bigbtn.idle{background:radial-gradient(circle at 35% 30%,#4b4775,#24213f);box-shadow:0 14px 0 #14122a,0 20px 40px #0008;color:#8f8ab8}
 .bigbtn.armed{background:radial-gradient(circle at 35% 30%,#ffd76a,#d49100);box-shadow:0 14px 0 #7a5300,0 0 60px #ffd23f88;color:#3a2600;animation:breathe 1s ease-in-out infinite}
@@ -72,9 +73,9 @@ input:focus{border-color:var(--pink)}
   <div class="card">
     <ul class="rules">
       <li><span class="n">1</span><span><b>Deja esta página abierta</b> durante la convención (puedes bloquear el teléfono; al volver se reconecta solita).</span></li>
-      <li><span class="n">2</span><span>En algún momento sorpresa <b>se activará un botón</b>. Tu teléfono vibrará y el botón se pondrá rosa.</span></li>
+      <li><span class="n">2</span><span>En cualquier momento, <b>sin previo aviso</b>, se activará el botón. Tu teléfono vibrará y el botón se pondrá rosa.</span></li>
       <li><span class="n">3</span><span><b>El primero en presionarlo gana</b> la oportunidad de pasar al escenario o llevarse un premio.</span></li>
-      <li><span class="n">4</span><span>Cuando el botón esté amarillo (“prepárate”), <b>¡no lo toques!</b> Si lo presionas antes de tiempo quedas fuera de esa ronda.</span></li>
+      <li><span class="n">4</span><span>Si el botón se pone amarillo (“prepárate”), <b>¡no lo toques todavía!</b> Si lo presionas antes de tiempo quedas fuera de esa ronda.</span></li>
     </ul>
     <button class="cta" id="rulesOk">¡Entendido!</button>
   </div>
@@ -82,6 +83,7 @@ input:focus{border-color:var(--pink)}
 
 <!-- 3. Juego -->
 <section id="s-game" class="screen hidden">
+  <img class="toplogo" src="/logo.png" alt="La Convenshow 10 Aniversario">
   <div class="hello">Jugando como <b id="meName"></b></div>
   <div id="status"></div>
   <button id="btn" class="bigbtn idle" disabled>ESPERA</button>
