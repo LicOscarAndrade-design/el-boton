@@ -5,6 +5,7 @@
      /pantalla  → pantalla grande con el QR y el ganador
      /admin     → cabina para activar el botón (pide contraseña)
      /qr.svg    → el código QR para imprimir
+     /jeopardy  → botones de los concursantes del Jeopardy (ver jeopardy-buzzer.js)
    ========================================================= */
 const express = require('express');
 const http = require('http');
@@ -22,7 +23,8 @@ const MAX_PLAYERS = Number(process.env.MAX_PLAYERS) || 5000;
 const app = express();
 app.set('trust proxy', true);
 const server = http.createServer(app);
-const io = new Server(server, { pingInterval: 10000, pingTimeout: 8000, maxHttpBufferSize: 1e4 });
+// cors abierto: la cabina del Jeopardy se abre como archivo local y se conecta desde ahí
+const io = new Server(server, { pingInterval: 10000, pingTimeout: 8000, maxHttpBufferSize: 1e4, cors: { origin: true } });
 
 app.use(express.static(path.join(__dirname, 'public'), { extensions: ['html'] }));
 
@@ -44,7 +46,8 @@ app.get('/qr.svg', async (req, res) => {
   const svg = await QRCode.toString(joinUrl(req), { type: 'svg', margin: 1, errorCorrectionLevel: 'M', color: { dark: '#000000', light: '#ffffff' } });
   res.type('image/svg+xml').send(svg);
 });
-app.get('/salud', (req, res) => res.send('ok'));
+app.get('/salud', (req, res) => res.set('Access-Control-Allow-Origin', '*').send('ok'));
+require('./jeopardy-buzzer')({ io, app, QRCode, joinUrl, ADMIN_PASSWORD });
 
 /* ---------- estado del juego ---------- */
 const players = new Map(); // token -> { token, name, sockets:Set, wins, banned, joinedAt }
@@ -217,6 +220,7 @@ server.listen(PORT, () => {
   console.log(`   Jugadores : http://${lanIp()}:${PORT}/`);
   console.log(`   Pantalla  : http://localhost:${PORT}/pantalla`);
   console.log(`   Cabina    : http://localhost:${PORT}/admin`);
+  console.log(`   Jeopardy  : http://${lanIp()}:${PORT}/jeopardy (concursantes)`);
   if (!process.env.ADMIN_PASSWORD) console.log('   ⚠️  Contraseña de cabina por defecto: admin123 (cámbiala con ADMIN_PASSWORD)');
   if (PUBLIC_URL) console.log(`   QR apunta a: ${PUBLIC_URL}/`);
   console.log('');

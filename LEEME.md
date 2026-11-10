@@ -10,6 +10,8 @@ Cada asistente escanea el QR, escribe su nombre y ve las instrucciones. Cuando l
 | `/pantalla` | Proyector o pantalla del escenario: muestra el QR, cuántos están conectados, “¡PREPÁRENSE!”, “¡YA!” y al ganador |
 | `/admin` | Cabina: activar el botón, ver el orden de llegada, quitar jugadores (pide contraseña) |
 | `/qr.svg` | El QR solo, para imprimirlo en la entrada |
+| `/jeopardy` | Botón de los concursantes del Jeopardy (se conecta desde la cabina del Jeopardy) |
+| `/qr-jeopardy.svg` | QR que lleva a `/jeopardy` |
 
 ## Opción A (recomendada): publicarlo en internet con Render (gratis)
 
@@ -61,3 +63,7 @@ La consola muestra la dirección para los teléfonos. El QR de `/pantalla` apunt
 - Si alguien bloquea su teléfono o cierra el navegador, al volver a abrir la página se reconecta automáticamente con su mismo nombre.
 - El servidor decide quién llegó primero según el orden en que recibe cada toque. Quien tenga mala señal llega un poco tarde, como en cualquier juego en línea.
 - Se probó con 200 jugadores simultáneos sin problemas.
+
+## Botones del Jeopardy
+
+El mismo servidor también da los botones para los concursantes del Jeopardy, en `/jeopardy`. Es un modo aparte: no se mezcla con el Botón sorpresa, y los dos se pueden usar el mismo día. La cabina del Jeopardy se conecta con la misma contraseña de cabina (`ADMIN_PASSWORD`). Las instrucciones están en el LEEME del Jeopardy.

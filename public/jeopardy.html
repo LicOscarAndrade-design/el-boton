@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0d0b1e">
+<title>Jeopardy — Botón de concursante</title>
+<style>
+:root{--bg:#0d0b1e;--card:#1a1640;--line:#2f2a6e;--pink:#ff2e88;--cyan:#22d3ee;--gold:#ffd23f;--txt:#f5f3ff;--muted:#a7a1d6;--tc:#ff2e88}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+body{background:radial-gradient(ellipse at top,#1d1fb0 0%,var(--bg) 60%) fixed;overscroll-behavior:none}
+.screen{min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px 20px calc(20px + env(safe-area-inset-bottom));text-align:center}
+.hidden{display:none!important}
+.logo{width:min(40vw,160px,20vh);height:auto;margin-bottom:8px;filter:drop-shadow(0 6px 14px #0008)}
+h1{font-size:30px;margin:0 0 4px;font-weight:900;color:var(--gold)}
+.sub{color:var(--muted);margin:0 0 20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:20px;width:100%;max-width:420px}
+input{width:100%;font-size:20px;padding:14px;border-radius:14px;border:2px solid var(--line);background:#0e0b26;color:var(--txt);text-align:center;outline:none}
+input:focus{border-color:var(--pink)}
+.lbl{display:block;font-weight:700;margin:14px 0 8px;text-align:left}
+.teams{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.team{border:3px solid var(--c);background:#0e0b26;color:var(--c);border-radius:12px;padding:12px 6px;font-size:16px;font-weight:800;cursor:pointer}
+.team.sel{background:var(--c);color:#111}
+.cta{width:100%;margin-top:16px;font-size:20px;font-weight:800;padding:16px;border:0;border-radius:14px;background:linear-gradient(90deg,var(--pink),#ff6a3d);color:#fff;cursor:pointer}
+.err{color:#fca5a5;min-height:22px;margin-top:10px;font-size:14px}
+.badge{display:inline-flex;gap:8px;align-items:center;background:#0006;border:2px solid var(--tc);border-radius:99px;padding:6px 14px;font-weight:700;margin-bottom:10px}
+.badge .d{width:12px;height:12px;border-radius:50%;background:var(--tc)}
+#status{font-size:19px;min-height:54px;margin:6px 0 18px;max-width:380px;line-height:1.35}
+#status b{color:var(--gold)}
+.bigbtn{width:min(72vw,300px,42vh);aspect-ratio:1;border-radius:50%;border:0;font-size:30px;font-weight:900;color:#fff;cursor:pointer;touch-action:manipulation;user-select:none;-webkit-user-select:none;transition:transform .06s}
+.bigbtn:active{transform:scale(.94)}
+.bigbtn.idle{background:radial-gradient(circle at 35% 30%,#4b4775,#24213f);box-shadow:0 14px 0 #14122a,0 20px 40px #0008;color:#8f8ab8}
+.bigbtn.open{background:radial-gradient(circle at 35% 30%,#ff6aa8,#e0005e);box-shadow:0 14px 0 #7a0033,0 0 80px #ff2e88cc;animation:throb .35s ease-in-out infinite alternate}
+.bigbtn.me{background:radial-gradient(circle at 35% 30%,#ffe27a,#d49100);box-shadow:0 14px 0 #7a5300,0 0 80px #ffd23fcc;color:#3a2600;font-size:24px}
+.bigbtn.done{background:radial-gradient(circle at 35% 30%,#3d3a5c,#1e1b36);box-shadow:0 6px 0 #14122a;color:#8f8ab8;font-size:22px}
+@keyframes throb{to{transform:scale(1.06)}}
+.flashbg{position:fixed;inset:0;pointer-events:none;background:var(--pink);opacity:0}
+.flashbg.gold{background:var(--gold)}
+.flashbg.go{animation:fl .6s 3}
+@keyframes fl{50%{opacity:.35}}
+.conn{position:fixed;top:calc(10px + env(safe-area-inset-top));right:10px;font-size:12px;padding:4px 10px;border-radius:99px;background:#0f3d24;color:#86efac}
+.conn.off{background:#3f1d1d;color:#fca5a5}
+.link{background:none;border:0;color:var(--muted);text-decoration:underline;font-size:13px;margin-top:18px;cursor:pointer}
+</style>
+</head>
+<body>
+<span id="conn" class="conn off hidden">Conectando…</span>
+
+<section id="s-join" class="screen">
+  <img class="logo" src="/logo.png" alt="">
+  <h1>JEOPARDY</h1>
+  <p class="sub">Botón de concursante</p>
+  <form class="card" id="joinForm" autocomplete="off">
+    <label class="lbl" for="name">Tu nombre</label>
+    <input id="name" maxlength="24" placeholder="Nombre o apodo" enterkeyhint="done">
+    <label class="lbl">Tu equipo</label>
+    <div class="teams" id="teams"></div>
+    <button class="cta" type="submit">Entrar</button>
+    <div class="err" id="err"></div>
+  </form>
+</section>
+
+<section id="s-game" class="screen hidden">
+  <img class="logo" src="/logo.png" alt="">
+  <div class="badge"><span class="d"></span><span id="who"></span></div>
+  <div id="status"></div>
+  <button id="btn" class="bigbtn idle" disabled>ESPERA</button>
+  <button class="link" id="change">Cambiar nombre o equipo</button>
+</section>
+
+<section id="s-kicked" class="screen hidden">
+  <h1>Ya no participas</h1>
+  <p class="sub">La cabina te retiró del juego. Si es un error, avisa al staff.</p>
+</section>
+
+<div class="flashbg" id="flashbg"></div>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+const COLORS = ['#ff4d6d','#3fa9ff','#3ddc84','#ffcc33','#c77dff','#ff8c42','#2ee6d6','#ff6ec7'];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const get = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+const set = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+
+let token = get('jp_token');
+if (!token) { token = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2); set('jp_token', token); }
+let name = get('jp_name') || '', team = get('jp_team') === null ? null : Number(get('jp_team'));
+let joined = false, editing = !name || team === null, R = { teams: [], open: false, locked: [], winner: null }, ME = null, sentAt = null, lastKey = '';
+
+const socket = io('/jp', { transports: ['websocket', 'polling'] });
+socket.on('connect', () => { setConn(true); if (!editing) join(); });
+socket.on('disconnect', () => setConn(false));
+socket.on('round', r => { R = r; if (team !== null && team >= R.teams.length && !editing) { editing = true; } render(); });
+socket.on('me', m => { ME = m; if (m.team === null && !editing && joined) editing = true; render(); });
+function setConn(ok) { const c = $('#conn'); c.classList.toggle('hidden', !name); c.classList.toggle('off', !ok); c.textContent = ok ? '● Conectado' : '● Reconectando…'; }
+
+function join(cb) {
+  socket.emit('join', { token, name, team }, res => {
+    if (res && res.ok) { joined = true; if (res.team === null) editing = true; }
+    cb && cb(res); render();
+  });
+}
+
+$('#name').value = name;
+let pick = team;
+$('#teams').addEventListener('click', e => { const b = e.target.closest('[data-t]'); if (!b) return; pick = Number(b.dataset.t); render(); });
+$('#joinForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const n = $('#name').value.replace(/\s+/g, ' ').trim().slice(0, 24);
+  if (!n) return $('#err').textContent = 'Escribe tu nombre.';
+  if (pick === null || pick >= R.teams.length) return $('#err').textContent = 'Elige tu equipo.';
+  if (!socket.connected) return $('#err').textContent = 'Conectando… intenta de nuevo.';
+  name = n; team = pick; set('jp_name', name); set('jp_team', String(team));
+  unlock();
+  join(res => { if (!res || !res.ok) { $('#err').textContent = (res && res.error) || 'No se pudo entrar.'; return; } editing = false; $('#err').textContent = ''; setConn(true); keepAwake(); render(); });
+});
+$('#change').onclick = () => { editing = true; pick = team; render(); };
+
+const btn = $('#btn');
+btn.addEventListener('pointerdown', e => {
+  e.preventDefault(); if (btn.disabled) return;
+  socket.emit('press'); sentAt = R.qid + '|' + Date.now();
+  btn.className = 'bigbtn done'; btn.textContent = '¡ENVIADO!'; btn.disabled = true;
+  if (navigator.vibrate) navigator.vibrate(30);
+});
+
+function render() {
+  if (ME && ME.kicked) return show('s-kicked');
+  if (editing || !joined) {
+    show('s-join');
+    $('#teams').innerHTML = R.teams.length
+      ? R.teams.map((t, i) => `<button type="button" class="team ${pick === i ? 'sel' : ''}" style="--c:${COLORS[i % COLORS.length]}" data-t="${i}">${esc(t)}</button>`).join('')
+      : '<div style="grid-column:1/-1;color:var(--muted)">Esperando a que la cabina abra el juego…</div>';
+    return;
+  }
+  show('s-game');
+  const c = COLORS[team % COLORS.length];
+  document.documentElement.style.setProperty('--tc', c);
+  $('#who').textContent = `${name} · ${R.teams[team] || ''}`;
+  const locked = R.locked.includes(team);
+  const w = R.winner;
+  let cls = 'idle', label = 'ESPERA', dis = true, text = 'Espera a que salga la siguiente pregunta.';
+  if (w && ME && ME.isWinner) { cls = 'me'; label = '¡TE TOCA!'; text = '<b>¡Ganaste el turno!</b> Responde en forma de pregunta: “¿Quién es…?” / “¿Qué es…?”'; }
+  else if (w) { cls = 'done'; label = w.team === team ? '🙌' : '✋'; text = `Responde <b>${esc(w.name)}</b> (${esc(R.teams[w.team] || '')}).`; }
+  else if (locked) { cls = 'done'; label = '🔒'; text = 'Tu equipo ya respondió esta pregunta. Espera la siguiente.'; }
+  else if (R.open) { cls = 'open'; label = '¡PRESIONA!'; dis = false; text = '<b>¡Rápido!</b> El primero en presionar responde.'; }
+  btn.className = 'bigbtn ' + cls; btn.textContent = label; btn.disabled = dis;
+  $('#status').innerHTML = text;
+  const k = cls + (w ? w.name : '') + R.qid;
+  if (k !== lastKey) {
+    if (cls === 'open') { vib([300]); beep([880, 1175]); flash(''); }
+    if (cls === 'me') { vib([200, 100, 400]); beep([523, 659, 784, 1047]); flash('gold'); }
+    lastKey = k;
+  }
+}
+function show(id) { document.querySelectorAll('.screen').forEach(s => s.classList.toggle('hidden', s.id !== id)); }
+function flash(color) { const f = $('#flashbg'); f.className = 'flashbg'; void f.offsetWidth; f.className = 'flashbg go' + (color ? ' ' + color : ''); }
+const vib = p => { if (navigator.vibrate) navigator.vibrate(p); };
+let actx;
+function unlock() { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); actx.resume(); } catch (e) {} }
+function beep(fs) {
+  if (!actx) return;
+  fs.forEach((f, i) => { const o = actx.createOscillator(), g = actx.createGain(), t = actx.currentTime + i * .1;
+    o.type = 'square'; o.frequency.value = f; g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.15, t + .01); g.gain.exponentialRampToValueAtTime(.0001, t + .15);
+    o.connect(g).connect(actx.destination); o.start(t); o.stop(t + .18); });
+}
+async function keepAwake() { try { if ('wakeLock' in navigator && document.visibilityState === 'visible') await navigator.wakeLock.request('screen'); } catch (e) {} }
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { keepAwake(); if (!socket.connected) socket.connect(); } });
+document.addEventListener('pointerdown', unlock, { once: true });
+render();
+</script>
+</body>
+</html>
