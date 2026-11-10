@@ -38,6 +38,8 @@ input:focus{border-color:var(--pink)}
 @keyframes throb{to{transform:scale(1.06)}}
 .flashbg{position:fixed;inset:0;pointer-events:none;background:var(--pink);opacity:0}
 .flashbg.go{animation:fl .6s 3}
+.flashbg.gold{background:var(--gold)}
+.flashbg.gold.go{animation:fl .7s 3}
 @keyframes fl{50%{opacity:.35}}
 .win{background:linear-gradient(160deg,#3a2a00,#120d00);}
 .win .t{font-size:54px;font-weight:900;color:var(--gold);line-height:1;margin:0;text-shadow:0 4px 0 #000;animation:pop .6s cubic-bezier(.2,1.6,.4,1)}
@@ -220,11 +222,13 @@ function render() {
   // aviso cuando se activa
   const key = R.no + R.state;
   if (lastState !== key) {
-    if (R.state === 'armed' && !(ME && ME.ineligible)) { if (navigator.vibrate) navigator.vibrate([150, 80, 150]); beep([440]); }
-    if (R.state === 'open' && cls === 'open') { if (navigator.vibrate) navigator.vibrate([400]); beep([880, 1175]); const f = $('#flashbg'); f.classList.remove('go'); void f.offsetWidth; f.classList.add('go'); }
+    if (R.state === 'armed' && cls === 'armed') { if (navigator.vibrate) navigator.vibrate([150, 80, 150]); beep([440]); flash('gold'); }
+    if (R.state === 'open' && cls === 'open') { if (navigator.vibrate) navigator.vibrate([400]); beep([880, 1175]); flash(''); }
     lastState = key;
   }
 }
+// destello de pantalla completa: amarillo en "PREPÁRATE", rosa cuando se activa
+function flash(color) { const f = $('#flashbg'); f.className = 'flashbg'; void f.offsetWidth; f.className = 'flashbg go' + (color ? ' ' + color : ''); }
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 /* ---------- extras: sonido, pantalla encendida, confeti ---------- */
