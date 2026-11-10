@@ -28,7 +28,6 @@ html,body{margin:0;background:var(--bg);color:var(--txt);font-family:system-ui,-
 .state{font-size:28px;font-weight:900;padding:16px;border-radius:10px;text-align:center;margin-bottom:12px}
 .state.idle{background:#24213f;color:var(--muted)}
 .state.armed{background:#5c4000;color:var(--gold)}
-.state.waiting{background:#1e3a5f;color:#93c5fd}
 .state small{display:block;font-size:14px;font-weight:600;opacity:.85;margin-top:4px}
 .state.open{background:#7a0033;color:#fff;animation:bl .4s steps(2) infinite}
 .state.won{background:#3d2e00;color:var(--gold)}
@@ -80,7 +79,7 @@ input[type=text],input[type=password],input[type=number]{background:#0e0b26;colo
           <button class="btn gold big" id="open">⚡ Activar YA</button>
         </div>
         <button class="btn bad" id="stop" style="width:100%">⏹ Apagar botón / nueva ronda</button>
-        <div class="hint">“Espera sorpresa”: el botón se activa solo tras un tiempo aleatorio (hasta 10 minutos). Mientras tanto los teléfonos y la pantalla se ven apagados, así que nadie sabe que ya viene; solo ven “PREPÁRATE” en los últimos segundos. Puedes adelantarlo con “Activar YA”.</div>
+        <div class="hint">“Espera sorpresa”: los teléfonos y la pantalla muestran “PREPÁRATE” durante toda la espera, y el botón se activa tras un tiempo aleatorio (hasta 10 minutos), así que nadie sabe el momento exacto. Puedes adelantarlo con “Activar YA”.</div>
       </div>
       <div class="card" style="margin-top:14px">
         <h2>Orden de llegada (esta ronda)</h2>
@@ -94,7 +93,6 @@ input[type=text],input[type=password],input[type=number]{background:#0e0b26;colo
         <label class="opt"><input type="checkbox" id="optEx"> Quien ya ganó no puede volver a ganar</label>
         <label class="opt"><input type="checkbox" id="optEarly"> Bloquear la ronda a quien presione antes de tiempo</label>
         <div class="opt" style="flex-wrap:wrap">Espera sorpresa entre <input type="number" id="optMin" min="0" max="600" step="1" style="width:80px"> y <input type="number" id="optMax" min="0" max="600" step="1" style="width:80px"> segundos <span id="optTxt" style="color:var(--muted)"></span></div>
-        <div class="opt">Mostrar “PREPÁRATE” los últimos <input type="number" id="optWarn" min="0" max="60" step="1" style="width:70px"> segundos <span style="color:var(--muted)">(0 = sin aviso)</span></div>
         <div class="hint">Máximo 600 segundos (10 minutos). Ejemplo: entre 60 y 600 = en algún momento entre 1 y 10 minutos.</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
           <button class="btn sm" id="resetWins">Borrar historial de ganadores</button>
@@ -133,7 +131,7 @@ $('#lf').onsubmit = e => { e.preventDefault(); pw = $('#pw').value; auth(); };
 socket.on('connect', () => { $('#conn').textContent = '● conectado'; if (pw) auth(); });
 socket.on('disconnect', () => $('#conn').textContent = '● sin conexión, reintentando…');
 
-const LABEL = { idle: 'APAGADO', waiting: '⏳ ESPERA SECRETA', armed: '⚠️ “¡PREPÁRATE!” EN LOS TELÉFONOS', open: '¡ACTIVO! ESPERANDO AL PRIMERO', won: '¡HAY GANADOR!' };
+const LABEL = { idle: 'APAGADO', armed: '⏳ “¡PREPÁRATE!” EN LOS TELÉFONOS', open: '¡ACTIVO! ESPERANDO AL PRIMERO', won: '¡HAY GANADOR!' };
 let openAtLocal = 0;
 const fmt = sec => { sec = Math.max(0, Math.round(sec)); return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0'); };
 socket.on('admin:state', s => { A = s; openAtLocal = s.round.msToOpen ? Date.now() + s.round.msToOpen : 0; draw(); });
@@ -142,17 +140,16 @@ function draw() {
   const r = A.round;
   $('#rno').textContent = r.no ? '#' + r.no : '';
   const st = $('#state'); st.className = 'state ' + r.state;
-  st.innerHTML = LABEL[r.state] + ((r.state === 'waiting' || r.state === 'armed') && openAtLocal ? `<small>Se activa en <span id="cd">${fmt((openAtLocal - Date.now()) / 1000)}</span>${r.state === 'waiting' ? ' · los jugadores no lo saben' : ''}</small>` : '');
+  st.innerHTML = LABEL[r.state] + (r.state === 'armed' && openAtLocal ? `<small>Se activa en <span id="cd">${fmt((openAtLocal - Date.now()) / 1000)}</span> · los jugadores no ven este tiempo</small>` : '');
   $('#winner').classList.toggle('hidden', !r.winner);
   if (r.winner) { $('#wn').textContent = r.winner.name; $('#wm').textContent = `${(r.winner.ms / 1000).toFixed(3)} s después de activarse`; $('#wc').textContent = r.winner.code; }
-  $('#open').textContent = (r.state === 'armed' || r.state === 'waiting') ? '⚡ Activar YA (saltar espera)' : '⚡ Activar YA';
+  $('#open').textContent = r.state === 'armed' ? '⚡ Activar YA (saltar espera)' : '⚡ Activar YA';
   $('#sOnline').textContent = A.online; $('#sPress').textContent = A.totalPresses; $('#sFalse').textContent = A.falseStarts;
   $('#presses').innerHTML = A.presses.map(p => `<tr><td>${p.pos}</td><td>${esc(p.name)}</td><td>${(p.ms / 1000).toFixed(3)} s</td></tr>`).join('') || '<tr><td colspan="3" style="color:var(--muted)">Nadie todavía</td></tr>';
   $('#hist').innerHTML = A.history.map(h => `<tr><td>${h.round}</td><td>${esc(h.name)}</td><td><b>${h.code}</b></td><td>${(h.ms / 1000).toFixed(2)} s</td></tr>`).join('') || '<tr><td colspan="4" style="color:var(--muted)">Sin ganadores aún</td></tr>';
   const s = A.settings;
   if (document.activeElement.id !== 'optMin') $('#optMin').value = s.minDelay;
   if (document.activeElement.id !== 'optMax') $('#optMax').value = s.maxDelay;
-  if (document.activeElement.id !== 'optWarn') $('#optWarn').value = s.warnSeconds;
   $('#optTxt').textContent = `(= ${fmt(s.minDelay)} a ${fmt(s.maxDelay)} min)`;
   $('#optEx').checked = s.excludeWinners; $('#optEarly').checked = s.penalizeEarly;
   drawPlayers();
@@ -174,8 +171,8 @@ $('#plist').onclick = e => {
 $('#arm').onclick = () => socket.emit('admin:arm');
 $('#open').onclick = () => socket.emit('admin:open');
 $('#stop').onclick = () => socket.emit('admin:stop');
-const sendSettings = () => socket.emit('admin:settings', { excludeWinners: $('#optEx').checked, penalizeEarly: $('#optEarly').checked, minDelay: Number($('#optMin').value), maxDelay: Number($('#optMax').value), warnSeconds: Number($('#optWarn').value) });
-['#optEx', '#optEarly', '#optMin', '#optMax', '#optWarn'].forEach(id => $(id).onchange = sendSettings);
+const sendSettings = () => socket.emit('admin:settings', { excludeWinners: $('#optEx').checked, penalizeEarly: $('#optEarly').checked, minDelay: Number($('#optMin').value), maxDelay: Number($('#optMax').value)});
+['#optEx', '#optEarly', '#optMin', '#optMax'].forEach(id => $(id).onchange = sendSettings);
 $('#resetWins').onclick = () => confirm('¿Borrar el historial? Los ganadores anteriores podrán volver a ganar.') && socket.emit('admin:resetwins');
 $('#clearOff').onclick = () => socket.emit('admin:clearplayers');
 </script>

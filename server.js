@@ -49,13 +49,13 @@ app.get('/salud', (req, res) => res.send('ok'));
 /* ---------- estado del juego ---------- */
 const players = new Map(); // token -> { token, name, sockets:Set, wins, banned, joinedAt }
 const MAX_DELAY = 600; // 10 minutos
-const settings = { excludeWinners: true, penalizeEarly: true, minDelay: 2, maxDelay: 6, warnSeconds: 5 };
+const settings = { excludeWinners: true, penalizeEarly: true, minDelay: 2, maxDelay: 6 };
 const history = []; // ganadores anteriores
 let round = newRound(0);
-let armTimer = null, warnTimer = null;
+let armTimer = null;
 
 function newRound(no) {
-  // estados: idle → waiting (espera secreta: el público ve "apagado") → armed ("¡prepárate!") → open → won
+  // estados: idle → armed ("¡prepárate!" durante toda la espera) → open → won
   return { no, state: 'idle', openedAt: 0, openAt: 0, presses: [], pressed: new Map(), locked: new Set(), winner: null };
 }
 const isConnected = p => p.sockets.size > 0 && !p.banned;
@@ -65,7 +65,7 @@ const code4 = () => String(crypto.randomInt(1000, 10000));
 
 function publicRound() {
   return {
-    no: round.no, state: round.state === 'waiting' ? 'idle' : round.state, count: playerCount(), penalizeEarly: settings.penalizeEarly,
+    no: round.no, state: round.state, count: playerCount(), penalizeEarly: settings.penalizeEarly,
     winner: round.winner ? { name: round.winner.name, code: round.winner.code, ms: round.winner.ms } : null,
   };
 }
@@ -103,7 +103,7 @@ function adminState() {
   };
 }
 
-function clearTimers() { clearTimeout(armTimer); clearTimeout(warnTimer); armTimer = warnTimer = null; }
+function clearTimers() { clearTimeout(armTimer); armTimer = null; }
 function startRound(state) {
   clearTimers();
   round = newRound(round.no + 1);
@@ -181,14 +181,12 @@ io.on('connection', socket => {
   admin('admin:arm', () => {
     const min = Math.max(0, settings.minDelay), max = Math.max(min, settings.maxDelay);
     const delay = (min + Math.random() * (max - min)) * 1000;
-    const warn = settings.warnSeconds * 1000;
-    startRound(delay > warn ? 'waiting' : 'armed');
+    startRound('armed');
     round.openAt = Date.now() + delay;
-    if (round.state === 'waiting' && warn > 0) warnTimer = setTimeout(() => { round.state = 'armed'; broadcastRound(); }, delay - warn);
     armTimer = setTimeout(openNow, delay);
     scheduleAdmin();
   });
-  admin('admin:open', () => { if (round.state === 'armed' || round.state === 'waiting') openNow(); else startRound('open'); });
+  admin('admin:open', () => { if (round.state === 'armed') openNow(); else startRound('open'); });
   admin('admin:stop', () => startRound('idle'));
   admin('admin:settings', s => {
     if (!s || typeof s !== 'object') return;
@@ -197,7 +195,6 @@ io.on('connection', socket => {
     if ('minDelay' in s) settings.minDelay = Math.min(MAX_DELAY, Math.max(0, Number(s.minDelay) || 0));
     if ('maxDelay' in s) settings.maxDelay = Math.min(MAX_DELAY, Math.max(0, Number(s.maxDelay) || 0));
     if (settings.maxDelay < settings.minDelay) settings.maxDelay = settings.minDelay;
-    if ('warnSeconds' in s) settings.warnSeconds = Math.min(60, Math.max(0, Number(s.warnSeconds) || 0));
     sendMeAll(); broadcastRound();
   });
   admin('admin:kick', token => {
